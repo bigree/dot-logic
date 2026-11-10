@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>ドット図鑑ロジック</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -136,7 +140,25 @@ kbd{font-family:inherit;border:1px solid var(--line);border-bottom-width:2px;bor
 .exrow figure{margin:0;display:flex;flex-direction:column;gap:2px}
 .exrow figcaption{font-size:12px;color:var(--muted)}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
-@media (max-width:480px){.brand{font-size:20px}.mode button{padding:8px 12px}}
+@media (max-width:480px){.brand{font-size:20px}.mode button{padding:8px 12px}
+  .app{padding-left:max(8px,env(safe-area-inset-left,0px));padding-right:max(8px,env(safe-area-inset-right,0px));padding-block:8px 24px;gap:10px}
+  .panel{padding:12px}
+  body{font-size:14px;line-height:1.55}
+  header{gap:6px}
+  .brand{font-size:18px}.brand canvas{width:22px;height:22px}
+  .tab{padding:4px 10px;font-size:13px}
+  .playbar{gap:6px}.playbar .title{flex-basis:120px}
+  h2{font-size:17px}.stats{gap:8px;font-size:13px}.stats span b{font-size:16px}
+  #board{padding:2px}
+  .controls{gap:6px;width:100%}.controls .mode{flex:1 1 100%}.controls .mode button{flex:1;justify-content:center;padding:12px 8px}
+  .controls .btn{flex:1;padding:10px 8px}
+  .tile{width:calc((100% - 24px)/4);min-width:64px}
+  .modal canvas{width:140px;height:140px}
+  .dex{grid-template-columns:repeat(2,1fr)}
+}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+button,.cell{touch-action:manipulation}
+#board{touch-action:none}
 </style>
 <div class="app">
 <header>
@@ -364,8 +386,8 @@ document.addEventListener('keydown',e=>{if(S.view!=='play')return;if(e.key==='x'
 let cellEls=[],rcEls=[],ccEls=[],miniCv=null;
 function renderBoard(){const p=S.p,b=$('#board');b.innerHTML='';
   const maxR=Math.max(1,...p.rc.map(c=>c.length||1)),maxC=Math.max(1,...p.cc.map(c=>c.length||1));
-  const wrapW=Math.min($('#boardWrap').clientWidth,720)-10;
-  let cell=Math.floor(wrapW/(p.C+maxR*0.62+0.3));const hAvail=window.innerHeight-250;
+  const wrapW=Math.min($('#boardWrap').clientWidth,720)-6;
+  let cell=Math.floor(wrapW/(p.C+maxR*0.62+0.3));const hAvail=window.innerHeight-(window.innerWidth<=480?330:250);
   const byH=Math.floor(hAvail/(p.R+maxC*0.62+0.3));if(byH>=22)cell=Math.min(cell,byH);
   cell=Math.max(13,Math.min(44,cell));const fs=Math.max(9,Math.round(cell*0.5));
   const rcW=Math.max(cell,Math.ceil(maxR*fs*0.95+8)),ccH=Math.max(cell,Math.ceil(maxC*fs*1.15+6));
