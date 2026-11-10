@@ -178,6 +178,7 @@ button,.cell{touch-action:manipulation}
   <div class="chapters" id="chapters"></div>
   <p class="muted" style="font-size:13px">ステップをすべてクリアすると次のステップが開きます。
     <button class="linkish" id="unlockAll">経験者はすべて解放する</button></p>
+  <p class="muted" style="font-size:13px"><button class="linkish" id="resetAll">解答済みをすべて未解答に戻す</button></p>
 </main>
 
 <main id="view-play" hidden style="display:flex;flex-direction:column;gap:12px">
@@ -219,7 +220,7 @@ button,.cell{touch-action:manipulation}
     <section><h3>操作</h3>
       <ul style="margin:0;padding-left:1.2em">
         <li><b>ぬる</b>：マスをタップ（クリック）。なぞると一列まとめてぬれます。</li>
-        <li><b>✕をつける</b>：下のボタンでモードを切り替え。パソコンでは右クリックでも✕。「ここはぬらない」と分かったマスのメモです。</li>
+        <li><b>✕をつける</b>：下のボタンでモードを切り替え。パソコンでは右クリックでも✕。「ここはぬらない」と分かったマスのメモです。✕の上から「ぬる」で上書きもできます。</li>
         <li>まちがったマスをぬると、赤い✕が付いて<b>ミス</b>が1つ増えます。そのまま続けられます。</li>
         <li><b>ヒント</b>：今の盤面から確定できるマスを1つ、理由つきで教えてくれます（1問3回まで）。</li>
         <li>ミス0・ヒント0でクリアすると★3つ。</li>
@@ -352,13 +353,15 @@ function renderHome(){const n=PZ.filter(p=>store.cleared[p.id]).length;$('#dexCo
       b.onclick=()=>startPuzzle(p);tiles.appendChild(b);});
     box.appendChild(el);});
   $('#unlockAll').hidden=store.unlockAll;}
+$('#resetAll').onclick=()=>{if(!PZ.some(p=>store.cleared[p.id])){alert('解答済みの問題はありません。');return;}if(!confirm('解答済みの全問題を未解答に戻します。図鑑の登録と★記録が消えます。'))return;store.cleared={};store.boards={};save();renderHome();renderDex();};
 $('#unlockAll').onclick=()=>{store.unlockAll=true;save();renderHome();};
 
 function renderDex(){const g=$('#dexGrid');g.innerHTML='';PZ.forEach((p,i)=>{const cl=store.cleared[p.id];const d=document.createElement('div');d.className='dexcard';
   d.innerHTML=`<div class="dexno">No.${String(i+1).padStart(2,'0')} ・ ${p.R}×${p.C}</div>`;
-  if(cl){const cv=document.createElement('canvas');drawArt(cv,p);d.appendChild(cv);d.insertAdjacentHTML('beforeend',`<h3>${p.name}</h3>${starsHTML(cl.stars)}<p class="muted" style="font-size:13px">${p.note}</p>`);}
+  if(cl){const cv=document.createElement('canvas');drawArt(cv,p);d.appendChild(cv);d.insertAdjacentHTML('beforeend',`<h3>${p.name}</h3>${starsHTML(cl.stars)}<p class="muted" style="font-size:13px">${p.note}</p><button class="linkish" data-reset="${p.id}" style="align-self:flex-start">未解答に戻す</button>`);}
   else d.insertAdjacentHTML('beforeend',`<div class="q">?</div><h3 class="muted">？？？</h3><p class="muted" style="font-size:13px">ステップ${p.ch}「${CHAPTERS[p.ch].title}」で見つかる</p>`);
-  g.appendChild(d);});}
+  g.appendChild(d);});
+  g.querySelectorAll('[data-reset]').forEach(b=>b.onclick=()=>{const p=PZ.find(q=>q.id===b.dataset.reset);if(!confirm(`「${p.name}」を未解答に戻します。図鑑の登録と★記録が消えます。`))return;delete store.cleared[p.id];delete store.boards[p.id];save();renderDex();renderHome();});}
 
 /* ---------- play ---------- */
 function startPuzzle(p){S.p=p;const sv=store.boards[p.id];
@@ -414,7 +417,7 @@ const board=$('#board');
 board.addEventListener('contextmenu',e=>e.preventDefault());
 board.addEventListener('pointerdown',e=>{if(S.solved)return;const rc=cellAt(e.clientX,e.clientY);if(!rc)return;e.preventDefault();
   const p=S.p,i=rc[0]*p.C+rc[1],v=S.cells[i];const mode=(e.button===2)?'x':S.mode;let act=null;
-  if(mode==='fill'){if(v===0)act='fill';}else{if(v===0)act='x';else if(v===2)act='unx';}
+  if(mode==='fill'){if(v===0||v===2)act='fill';}else{if(v===0)act='x';else if(v===2)act='unx';}
   setCursor(rc);if(!act)return;S.drag={sr:rc[0],sc:rc[1],act,axis:null,stop:false};board.setPointerCapture(e.pointerId);startTimer();applyRange(rc);});
 board.addEventListener('pointermove',e=>{const rc=cellAt(e.clientX,e.clientY);if(rc)setCursor(rc);if(!S.drag||!rc)return;applyRange(rc);});
 const endDrag=()=>{if(S.drag){S.drag=null;afterChange();}};
@@ -427,7 +430,7 @@ function applyRange([r,c]){const d=S.drag,p=S.p;if(d.stop)return;
   else if(d.axis==='row'){const s=Math.sign(c-d.sc)||1;for(let k=d.sc;k!==c+s;k+=s)list.push([d.sr,k]);}
   else{const s=Math.sign(r-d.sr)||1;for(let k=d.sr;k!==r+s;k+=s)list.push([k,d.sc]);}
   for(const [rr,cc] of list){const i=rr*p.C+cc,v=S.cells[i];
-    if(d.act==='fill'&&v===0){if(p.sol[i])S.cells[i]=1;else{S.cells[i]=3;S.miss++;d.stop=true;onMiss(i);break;}}
+    if(d.act==='fill'&&(v===0||v===2)){if(p.sol[i])S.cells[i]=1;else{S.cells[i]=3;S.miss++;d.stop=true;onMiss(i);break;}}
     else if(d.act==='x'&&v===0)S.cells[i]=2;else if(d.act==='unx'&&v===2)S.cells[i]=0;}
   paint();updateStats();checkWin();}
 function onMiss(i){const e=cellEls[i];board.classList.remove('shake');void board.offsetWidth;board.classList.add('shake');
